@@ -1,6 +1,6 @@
 import { Todo } from "./interfaces";
 import sqlite3 = require("sqlite3");
-const db = new sqlite3.Database("db/todo.db");
+const db = new sqlite3.Database("todo.db");
 
 export const initDb: () => Promise<void> = async () => {
   return new Promise((resolve, reject) => {
