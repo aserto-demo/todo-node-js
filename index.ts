@@ -1,26 +1,9 @@
 import { Todo } from "./interfaces";
 import express = require("express");
 import cors = require("cors");
-import jwt = require("express-jwt");
-import jwksRsa = require("jwks-rsa");
 import { getUserByUserID } from "./directory";
 import { initDb, getTodos, insertTodo, updateTodo, deleteTodo } from "./store";
 import { UserCache, User } from "./interfaces";
-
-const checkJwt: jwt.RequestHandler = jwt({
-  // Dynamically provide a signing key based on the kid in the header and the signing keys provided by the JWKS endpoint
-  secret: jwksRsa.expressJwtSecret({
-    cache: true,
-    rateLimit: true,
-    jwksRequestsPerMinute: 5,
-    jwksUri: process.env.JWKS_URI,
-  }),
-
-  // Validate the audience and the issuer
-  audience: process.env.AUDIENCE,
-  issuer: process.env.ISSUER,
-  algorithms: ["RS256"],
-});
 
 const app: express.Application = express();
 app.use(express.json());
@@ -31,16 +14,18 @@ const PORT = 3001;
 //Users cache
 const users: UserCache = {};
 
-app.get("/user/:userID", checkJwt, async (req, res) => {
+app.get("/user/:userID", async (req, res) => {
   const { userID } = req.params;
-  const user: User = users[userID] ? users[userID] : await getUserByUserID(userID);
+  const user: User = users[userID]
+    ? users[userID]
+    : await getUserByUserID(userID);
 
   //Fill cache
   users[userID] = user;
   res.json(user);
 });
 
-app.get("/todos", checkJwt, async (req, res) => {
+app.get("/todos", async (req, res) => {
   try {
     const todos: Todo[] = await getTodos();
     res.json(todos);
@@ -49,7 +34,7 @@ app.get("/todos", checkJwt, async (req, res) => {
   }
 });
 
-app.post("/todo", checkJwt, async (req, res) => {
+app.post("/todo", async (req, res) => {
   const todo: Todo = req.body;
   try {
     await insertTodo(todo);
@@ -59,27 +44,25 @@ app.post("/todo", checkJwt, async (req, res) => {
   }
 });
 
-app.put("/todo/:ownerID", checkJwt, async (req, res) => {
-    const todo: Todo = req.body;
-    try {
-      await updateTodo(todo);
-      res.json({ msg: "Todo updated" });
-    } catch (error) {
-      res.status(500).send(error);
-    }
+app.put("/todo/:ownerID", async (req, res) => {
+  const todo: Todo = req.body;
+  try {
+    await updateTodo(todo);
+    res.json({ msg: "Todo updated" });
+  } catch (error) {
+    res.status(500).send(error);
   }
-);
+});
 
-app.delete("/todo/:ownerID", checkJwt, async (req, res) => {
-    const todo: Todo = req.body;
-    try {
-      deleteTodo(todo);
-      res.json({ msg: "Todo deleted" });
-    } catch (e) {
-      res.status(500).send(e);
-    }
+app.delete("/todo/:ownerID", async (req, res) => {
+  const todo: Todo = req.body;
+  try {
+    deleteTodo(todo);
+    res.json({ msg: "Todo deleted" });
+  } catch (e) {
+    res.status(500).send(e);
   }
-);
+});
 
 initDb().then(() => {
   app.listen(PORT, () => {
