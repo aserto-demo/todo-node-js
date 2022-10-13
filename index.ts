@@ -18,6 +18,12 @@ const authzOptions = {
   tenantId: process.env.ASERTO_TENANT_ID,
 };
 
+if (process.env.CERT_PATH) {
+  Object.assign(authzOptions, {
+    authorizerCertFile: process.env.CERT_PATH,
+  });
+}
+
 //Aserto authorizer middleware function
 const checkAuthz: express.Handler = jwtAuthz(authzOptions);
 

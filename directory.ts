@@ -1,10 +1,18 @@
 import "dotenv/config";
 import axios from "axios";
 import { User } from "./interfaces";
+import * as https from "https";
+import * as fs from "fs";
 
 const authorizerServiceUrl = process.env.ASERTO_AUTHORIZER_SERVICE_URL;
 const tenantId = process.env.ASERTO_TENANT_ID;
 const authorizerApiKey = process.env.ASERTO_AUTHORIZER_API_KEY;
+
+const agent = process.env.CERT_PATH
+  ? new https.Agent({
+      ca: fs.readFileSync(process.env.CERT_PATH),
+    })
+  : false;
 
 // get a user's profile from the management API
 const getUser: (string) => Promise<User> = async (userId) => {
@@ -19,9 +27,8 @@ const getUser: (string) => Promise<User> = async (userId) => {
         "aserto-tenant-id": tenantId,
         "Content-Type": "application/json",
       },
+      httpsAgent: agent ? agent : false,
     });
-
-    // console.log("RESULT", response);
 
     const result: User = response.data?.result;
     return result;
@@ -45,6 +52,7 @@ const getUserIdByUserSub: (string) => Promise<string> = async (userSub) => {
       data: JSON.stringify({
         identity: userSub,
       }),
+      httpsAgent: agent ? agent : false,
     });
 
     const result: string = response.data?.id;
